@@ -50,10 +50,19 @@
         display: flex;
         flex-direction: column;
     }
+    .calendar table {
+        table-layout: fixed;
+        width: 100%;
+    }
+    .events-container {
+        overflow: hidden;
+    }
     .calendar th {
         font-weight: 500;
         color: var(--text-muted-color);
         border-bottom: 2px solid var(--border-color) !important;
+        height: 40px;
+        vertical-align: middle;
     }
     .calendar td {
         text-align: center;
@@ -66,7 +75,10 @@
     .calendar .sunday { color: var(--sunday-color); }
     .calendar .saturday { color: var(--saturday-color); }
     td[data-date]:hover { background-color: #f8f9fa; cursor: pointer; }
-    .date-number { font-size: 0.9em; }
+    .date-number {
+        font-size: 0.9em;
+        padding-top: 5px;
+    }
     .today .date-number {
         background-color: var(--primary-accent-color);
         color: white;
@@ -76,6 +88,7 @@
         line-height: 28px;
         display: inline-block;
         font-weight: bold;
+        padding-top: 0;
     }
     .other-month { color: #ced4da; background-color: #f8f9fa; }
     .event-bar {
@@ -108,7 +121,7 @@
         color: white;
     }
     .color-btn.selected { border: 2px solid black; transform: scale(1.2); }
-    #countdownView {
+    #countdownView, #usageView {
         display: none;
         flex-grow: 1;
         flex-direction: column;
@@ -120,7 +133,14 @@
         padding-top: 0.5rem;
         margin-top: auto;
     }
-
+    .more-events-indicator {
+        font-size: 0.75em;
+        color: var(--text-muted-color);
+        text-align: left;
+        padding-left: 5px;
+        margin-top: 2px;
+        font-weight: bold;
+    }
     @keyframes celebrate-glow {
         0%   { box-shadow: 0 0 5px #ffc107, 0 0 10px #ffc107; }
         50%  { box-shadow: 0 0 20px #ffc107, 0 0 30px #ffc107, 0 0 40px #ffc107; }
@@ -130,10 +150,16 @@
         border-color: #ffc107 !important;
         animation: celebrate-glow 1.5s ease-in-out infinite;
     }
-
     @media (max-width: 767px) {
         .calendar-wrapper { padding: 5px; margin: 5px auto; }
-        .calendar th, .calendar td { height: 14vh; padding: 2px; font-size: 0.8em; }
+        .calendar th {
+            height: 30px;
+            font-size: 0.8em;
+        }
+        .calendar td {
+            height: 14vh;
+            padding: 2px;
+        }
         .date-number { font-size: 0.8em; }
         .today .date-number { width: 22px; height: 22px; line-height: 22px; }
         .event-bar { height: 18px; line-height: 18px; font-size: 0.7em; padding: 0 3px; }
@@ -254,4 +280,3 @@
 <script src="calendar.js"></script>
 </body>
 </html>
-
