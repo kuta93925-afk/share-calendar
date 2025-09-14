@@ -27,7 +27,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentUser = null;
     let events = { my: [], partner: [], shared: [] };
     let currentEventId = null;
-
+    // ▼▼▼ 修正点: isScrolling 変数を削除 ▼▼▼
+    
     const loginContainer = document.getElementById("loginContainer");
     const calendarContainer = document.getElementById("calendarContainer");
     const loginUserInput = document.getElementById("loginUser");
@@ -80,7 +81,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     };
-    
     const formatDate = date => new Date(date).toISOString().slice(0, 10);
 
     const generateCalendar = (year, month) => {
@@ -104,10 +104,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const isToday = (dateKey === todayString) ? 'today' : '';
             if (dayOfWeek === 0 && day > 1) html += `</tr><tr>`;
             html += `<td data-date="${dateKey}" class="${isToday} ${dayClass}"><span class="date-number">${day}</span>`;
-            
             const eventsContainer = document.createElement('div');
             eventsContainer.className = 'events-container';
-
             let dayEvents = [];
             if (holidays[dateKey]) {
                 dayEvents.push({ id: `holiday-${dateKey}`, title: holidays[dateKey], color: '#dc3545', isHoliday: true });
@@ -118,7 +116,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 return currentDate >= start && currentDate <= end;
             });
             dayEvents.push(...savedEvents);
-
             if (currentCalendar === 'shared') {
                 birthdays.forEach(birthday => {
                     if (currentDate.getMonth() + 1 === birthday.month && currentDate.getDate() === birthday.day) {
@@ -133,7 +130,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
             dayEvents.sort((a,b) => a.id - b.id);
-            
             const MAX_VISIBLE_EVENTS = 4;
             if (dayEvents.length > MAX_VISIBLE_EVENTS) {
                 for (let i = 0; i < MAX_VISIBLE_EVENTS - 1; i++) {
@@ -187,19 +183,41 @@ document.addEventListener("DOMContentLoaded", () => {
         const daysUntilTakumiBd = getDaysDiff(today, nextTakumiBd);
         const nextKoharuBd = getNextDate(birthdays[1].month, birthdays[1].day);
         const daysUntilKoharuBd = getDaysDiff(today, nextKoharuBd);
-        const anniversaryText = daysUntilAnniversary === 0 ? '今日です！🎉' : `${daysUntilAnniversary} <span class="fs-5">日</span>`;
-        const takumiBdText = daysUntilTakumiBd === 0 ? '今日です！🎉' : `${daysUntilTakumiBd} <span class="fs-5">日</span>`;
-        const koharuBdText = daysUntilKoharuBd === 0 ? '今日です！🎉' : `${daysUntilKoharuBd} <span class="fs-5">日</span>`;
+        const anniversaryText = daysUntilAnniversary === 0 ? '今日です！🎉' : `<span class="countdown-number">${daysUntilAnniversary}</span> <span class="countdown-unit">日</span>`;
+        const takumiBdText = daysUntilTakumiBd === 0 ? '今日です！🎉' : `<span class="countdown-number">${daysUntilTakumiBd}</span> <span class="countdown-unit">日</span>`;
+        const koharuBdText = daysUntilKoharuBd === 0 ? '今日です！🎉' : `<span class="countdown-number">${daysUntilKoharuBd}</span> <span class="countdown-unit">日</span>`;
         const anniversaryClass = daysUntilAnniversary === 0 ? 'celebrate' : '';
         const takumiBdClass = daysUntilTakumiBd === 0 ? 'celebrate' : '';
         const koharuBdClass = daysUntilKoharuBd === 0 ? 'celebrate' : '';
+        
+        // ▼▼▼ 修正点: カウントダウン画面のHTML構造とクラスを変更 ▼▼▼
         countdownView.innerHTML = `
             <div class="w-100" style="max-width: 500px;">
-                <h2 class="text-center mb-4">カウントダウン</h2>
-                <div class="card text-center mb-3 shadow-sm"><div class="card-body"><h5 class="card-title">付き合った日数</h5><p class="card-text fs-1 fw-bold text-primary">${daysSince} <span class="fs-5">日</span></p></div></div>
-                <div class="card text-center mb-3 shadow-sm ${anniversaryClass}"><div class="card-body"><h5 class="card-title">${n}年記念日まであと</h5><p class="card-text fs-1 fw-bold text-success">${anniversaryText}</p></div></div>
-                <div class="card text-center mb-3 shadow-sm ${takumiBdClass}"><div class="card-body"><h5 class="card-title">拓己誕生日まであと</h5><p class="card-text fs-1 fw-bold text-info">${takumiBdText}</p></div></div>
-                <div class="card text-center mb-3 shadow-sm ${koharuBdClass}"><div class="card-body"><h5 class="card-title">心春誕生日まであと</h5><p class="card-text fs-1 fw-bold text-warning">${koharuBdText}</p></div></div>
+                <h2 class="text-center mb-5 countdown-title">カウントダウン</h2>
+                <div class="card text-center mb-4 countdown-card">
+                    <div class="card-body">
+                        <p class="countdown-label mb-2">付き合った日数</p>
+                        <p class="card-text text-primary m-0"><span class="countdown-number">${daysSince}</span> <span class="countdown-unit">日</span></p>
+                    </div>
+                </div>
+                <div class="card text-center mb-4 countdown-card ${anniversaryClass}">
+                    <div class="card-body">
+                        <p class="countdown-label mb-2">${n}年記念日まであと</p>
+                        <p class="card-text text-success m-0">${anniversaryText}</p>
+                    </div>
+                </div>
+                <div class="card text-center mb-4 countdown-card ${takumiBdClass}">
+                    <div class="card-body">
+                        <p class="countdown-label mb-2">拓己誕生日まであと</p>
+                        <p class="card-text text-info m-0">${takumiBdText}</p>
+                    </div>
+                </div>
+                <div class="card text-center mb-4 countdown-card ${koharuBdClass}">
+                    <div class="card-body">
+                        <p class="countdown-label mb-2">心春誕生日まであと</p>
+                        <p class="card-text text-warning m-0">${koharuBdText}</p>
+                    </div>
+                </div>
             </div>`;
     };
 
@@ -214,7 +232,6 @@ document.addEventListener("DOMContentLoaded", () => {
             modal.colorButtonsDiv.appendChild(btn);
         });
     };
-
     const openModalForNew = dateKey => {
         currentEventId = null;
         modal.title.value = ""; modal.startDate.value = dateKey; modal.endDate.value = dateKey;
@@ -224,7 +241,6 @@ document.addEventListener("DOMContentLoaded", () => {
         updateColorButtons(colors[0]);
         eventModal.show();
     };
-
     const openModalForEdit = event => {
         currentEventId = event.id;
         modal.title.value = event.title; modal.startDate.value = event.startDate; modal.endDate.value = event.endDate;
@@ -236,7 +252,6 @@ document.addEventListener("DOMContentLoaded", () => {
         updateColorButtons(event.color);
         eventModal.show();
     };
-
     calendarDiv.addEventListener("click", e => {
         const eventBar = e.target.closest('.event-bar');
         const td = e.target.closest('td[data-date]');
@@ -250,14 +265,12 @@ document.addEventListener("DOMContentLoaded", () => {
             if (canAddEvent) openModalForNew(td.dataset.date);
         }
     });
-
     modal.colorButtonsDiv.addEventListener('click', e => {
         if (e.target.classList.contains('color-btn')) {
             modal.colorButtonsDiv.querySelector('.selected')?.classList.remove('selected');
             e.target.classList.add('selected');
         }
     });
-
     modal.saveBtn.addEventListener("click", async () => {
         const selectedColor = modal.colorButtonsDiv.querySelector('.selected')?.dataset.color || colors[0];
         const eventData = {
@@ -273,33 +286,21 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         if (!eventData.title) return alert('タイトルを入力してください。');
         if (new Date(eventData.startDate) > new Date(eventData.endDate)) return alert('終了日は開始日以降にしてください。');
-        
         let error;
         if (currentEventId) {
             ({ error } = await supabaseClient.from('events').update(eventData).eq('id', currentEventId));
         } else {
             ({ error } = await supabaseClient.from('events').insert([eventData]));
         }
-        if (error) {
-            console.error('Error saving event:', error); alert('保存に失敗しました。');
-        } else {
-            await initCalendar();
-            eventModal.hide();
-        }
+        if (error) { console.error('Error saving event:', error); alert('保存に失敗しました。'); }
+        else { await initCalendar(); eventModal.hide(); }
     });
-
     modal.deleteBtn.addEventListener("click", async () => {
-        if (!currentEventId) return;
-        if (!confirm('この予定を本当に削除しますか？')) return;
+        if (!currentEventId || !confirm('この予定を本当に削除しますか？')) return;
         const { error } = await supabaseClient.from('events').delete().eq('id', currentEventId);
-        if (error) {
-            console.error('Error deleting event:', error); alert('削除に失敗しました。');
-        } else {
-            await initCalendar();
-            eventModal.hide();
-        }
+        if (error) { console.error('Error deleting event:', error); alert('削除に失敗しました。'); }
+        else { await initCalendar(); eventModal.hide(); }
     });
-
     calendarTabs.addEventListener("click", e => {
         e.preventDefault();
         if (e.target.tagName !== 'A') return;
@@ -308,7 +309,6 @@ document.addEventListener("DOMContentLoaded", () => {
         currentCalendar = e.target.dataset.calendar;
         generateCalendar(currentYear, currentMonth);
     });
-
     viewSwitcher.addEventListener("click", e => {
         e.preventDefault();
         const target = e.target;
@@ -330,24 +330,20 @@ document.addEventListener("DOMContentLoaded", () => {
             usageView.style.display = 'block';
         }
     });
-
     prevBtn.addEventListener("click", () => {
         currentMonth--; if (currentMonth < 1) { currentMonth = 12; currentYear--; }
         generateCalendar(currentYear, currentMonth);
     });
-
     nextBtn.addEventListener("click", () => {
         currentMonth++; if (currentMonth > 12) { currentMonth = 1; currentYear++; }
         generateCalendar(currentYear, currentMonth);
     });
-    
     todayBtn.addEventListener("click", () => {
         const today = new Date();
         currentYear = today.getFullYear();
         currentMonth = today.getMonth() + 1;
         generateCalendar(currentYear, currentMonth);
     });
-    
     const initCalendar = async () => {
         const today = new Date();
         currentYear = today.getFullYear();
