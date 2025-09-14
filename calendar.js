@@ -81,13 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
     
-    const formatDate = date => {
-        const d = new Date(date);
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
+    const formatDate = date => new Date(date).toISOString().slice(0, 10);
 
     const generateCalendar = (year, month) => {
         calendarTitle.textContent = `${year}年 ${month}月`;
@@ -110,13 +104,21 @@ document.addEventListener("DOMContentLoaded", () => {
             const isToday = (dateKey === todayString) ? 'today' : '';
             if (dayOfWeek === 0 && day > 1) html += `</tr><tr>`;
             html += `<td data-date="${dateKey}" class="${isToday} ${dayClass}"><span class="date-number">${day}</span>`;
-            if (holidays[dateKey]) html += `<div class="event-bar" style="background:#dc3545; font-size:0.7em;">${holidays[dateKey]}</div>`;
-            html += `<div class="events-container">`;
-            const dayEvents = events[currentCalendar].filter(ev => {
+            
+            const eventsContainer = document.createElement('div');
+            eventsContainer.className = 'events-container';
+
+            let dayEvents = [];
+            if (holidays[dateKey]) {
+                dayEvents.push({ id: `holiday-${dateKey}`, title: holidays[dateKey], color: '#dc3545', isHoliday: true });
+            }
+            const savedEvents = events[currentCalendar].filter(ev => {
                 const start = new Date(ev.startDate); start.setHours(0,0,0,0);
                 const end = new Date(ev.endDate); end.setHours(0,0,0,0);
                 return currentDate >= start && currentDate <= end;
             });
+            dayEvents.push(...savedEvents);
+
             if (currentCalendar === 'shared') {
                 birthdays.forEach(birthday => {
                     if (currentDate.getMonth() + 1 === birthday.month && currentDate.getDate() === birthday.day) {
@@ -131,15 +133,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
             dayEvents.sort((a,b) => a.id - b.id);
-            dayEvents.forEach(ev => {
-                let displayColor = ev.color;
-                const isSpecialEvent = ev.id.toString().startsWith('birthday') || ev.id.toString().startsWith('anniversary');
-                if (currentCalendar === 'shared' && !isSpecialEvent) {
-                     displayColor = userColors[ev.owner] || ev.color;
+            
+            const MAX_VISIBLE_EVENTS = 4;
+            if (dayEvents.length > MAX_VISIBLE_EVENTS) {
+                for (let i = 0; i < MAX_VISIBLE_EVENTS - 1; i++) {
+                    const ev = dayEvents[i];
+                    let displayColor = ev.color;
+                    const isSpecialEvent = ev.id.toString().startsWith('birthday') || ev.id.toString().startsWith('anniversary') || ev.isHoliday;
+                    if (currentCalendar === 'shared' && !isSpecialEvent) {
+                         displayColor = userColors[ev.owner] || ev.color;
+                    }
+                    eventsContainer.innerHTML += `<div class="event-bar" data-id="${ev.id}" style="background:${displayColor}; font-size:${ev.isHoliday ? '0.7em' : '0.8em'}">${ev.title}</div>`;
                 }
-                html += `<div class="event-bar" data-id="${ev.id}" style="background:${displayColor}">${ev.title}</div>`;
-            });
-            html += `</div></td>`;
+                const hiddenCount = dayEvents.length - (MAX_VISIBLE_EVENTS - 1);
+                eventsContainer.innerHTML += `<div class="more-events-indicator">+ あと${hiddenCount}件</div>`;
+            } else {
+                dayEvents.forEach(ev => {
+                    let displayColor = ev.color;
+                    const isSpecialEvent = ev.id.toString().startsWith('birthday') || ev.id.toString().startsWith('anniversary') || ev.isHoliday;
+                    if (currentCalendar === 'shared' && !isSpecialEvent) {
+                         displayColor = userColors[ev.owner] || ev.color;
+                    }
+                    eventsContainer.innerHTML += `<div class="event-bar" data-id="${ev.id}" style="background:${displayColor}; font-size:${ev.isHoliday ? '0.7em' : '0.8em'}">${ev.title}</div>`;
+                });
+            }
+            html += eventsContainer.outerHTML + `</td>`;
         }
         const lastDayOfMonth = new Date(year, month - 1, daysInMonth);
         const endDayOfWeek = lastDayOfMonth.getDay();
@@ -196,6 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
             modal.colorButtonsDiv.appendChild(btn);
         });
     };
+
     const openModalForNew = dateKey => {
         currentEventId = null;
         modal.title.value = ""; modal.startDate.value = dateKey; modal.endDate.value = dateKey;
@@ -205,6 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
         updateColorButtons(colors[0]);
         eventModal.show();
     };
+
     const openModalForEdit = event => {
         currentEventId = event.id;
         modal.title.value = event.title; modal.startDate.value = event.startDate; modal.endDate.value = event.endDate;
@@ -216,12 +236,13 @@ document.addEventListener("DOMContentLoaded", () => {
         updateColorButtons(event.color);
         eventModal.show();
     };
+
     calendarDiv.addEventListener("click", e => {
         const eventBar = e.target.closest('.event-bar');
         const td = e.target.closest('td[data-date]');
         if (eventBar) {
             const eventId = eventBar.dataset.id;
-            if(!eventId || eventId.startsWith('birthday') || eventId.startsWith('anniversary')) return;
+            if(!eventId || eventId.startsWith('birthday') || eventId.startsWith('anniversary') || eventId.startsWith('holiday')) return;
             const event = events[currentCalendar].find(ev => ev.id === Number(eventId));
             if (event) openModalForEdit(event);
         } else if (td) {
@@ -229,12 +250,14 @@ document.addEventListener("DOMContentLoaded", () => {
             if (canAddEvent) openModalForNew(td.dataset.date);
         }
     });
+
     modal.colorButtonsDiv.addEventListener('click', e => {
         if (e.target.classList.contains('color-btn')) {
             modal.colorButtonsDiv.querySelector('.selected')?.classList.remove('selected');
             e.target.classList.add('selected');
         }
     });
+
     modal.saveBtn.addEventListener("click", async () => {
         const selectedColor = modal.colorButtonsDiv.querySelector('.selected')?.dataset.color || colors[0];
         const eventData = {
@@ -250,6 +273,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         if (!eventData.title) return alert('タイトルを入力してください。');
         if (new Date(eventData.startDate) > new Date(eventData.endDate)) return alert('終了日は開始日以降にしてください。');
+        
         let error;
         if (currentEventId) {
             ({ error } = await supabaseClient.from('events').update(eventData).eq('id', currentEventId));
@@ -259,9 +283,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (error) {
             console.error('Error saving event:', error); alert('保存に失敗しました。');
         } else {
-            await initCalendar(); eventModal.hide();
+            await initCalendar();
+            eventModal.hide();
         }
     });
+
     modal.deleteBtn.addEventListener("click", async () => {
         if (!currentEventId) return;
         if (!confirm('この予定を本当に削除しますか？')) return;
@@ -269,9 +295,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (error) {
             console.error('Error deleting event:', error); alert('削除に失敗しました。');
         } else {
-            await initCalendar(); eventModal.hide();
+            await initCalendar();
+            eventModal.hide();
         }
     });
+
     calendarTabs.addEventListener("click", e => {
         e.preventDefault();
         if (e.target.tagName !== 'A') return;
@@ -280,6 +308,7 @@ document.addEventListener("DOMContentLoaded", () => {
         currentCalendar = e.target.dataset.calendar;
         generateCalendar(currentYear, currentMonth);
     });
+
     viewSwitcher.addEventListener("click", e => {
         e.preventDefault();
         const target = e.target;
@@ -301,20 +330,24 @@ document.addEventListener("DOMContentLoaded", () => {
             usageView.style.display = 'block';
         }
     });
+
     prevBtn.addEventListener("click", () => {
         currentMonth--; if (currentMonth < 1) { currentMonth = 12; currentYear--; }
         generateCalendar(currentYear, currentMonth);
     });
+
     nextBtn.addEventListener("click", () => {
         currentMonth++; if (currentMonth > 12) { currentMonth = 1; currentYear++; }
         generateCalendar(currentYear, currentMonth);
     });
+    
     todayBtn.addEventListener("click", () => {
         const today = new Date();
         currentYear = today.getFullYear();
         currentMonth = today.getMonth() + 1;
         generateCalendar(currentYear, currentMonth);
     });
+    
     const initCalendar = async () => {
         const today = new Date();
         currentYear = today.getFullYear();
