@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>カレンダー</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    :root {
+        --base-bg-color: #f0f2f5;
+        --main-bg-color: #ffffff;
+        --border-color: #e9ecef;
+        --text-color: #495057;
+        --text-muted-color: #6c757d;
+        --sunday-color: #d9534f;
+        --saturday-color: #0275d8;
+        --primary-accent-color: #0d6efd;
+    }
+    body {
+        background-color: var(--base-bg-color);
+        color: var(--text-color);
+    }
+    #loginContainer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 90vh;
+    }
+    .login-box {
+        width: 100%;
+        max-width: 400px;
+        padding: 2rem;
+        background-color: var(--main-bg-color);
+        border-radius: 10px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    }
+    .calendar-wrapper {
+        max-width: 1400px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: var(--main-bg-color);
+        border-radius: 10px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        display: flex;
+        flex-direction: column;
+        min-height: 90vh;
+    }
+    .calendar-body {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .calendar th {
+        font-weight: 500;
+        color: var(--text-muted-color);
+        border-bottom: 2px solid var(--border-color) !important;
+    }
+    .calendar td {
+        text-align: center;
+        height: 130px;
+        vertical-align: top;
+        position: relative;
+        border: 1px solid var(--border-color);
+        transition: background-color 0.2s;
+    }
+    .calendar .sunday { color: var(--sunday-color); }
+    .calendar .saturday { color: var(--saturday-color); }
+    td[data-date]:hover { background-color: #f8f9fa; cursor: pointer; }
+    .date-number { font-size: 0.9em; }
+    .today .date-number {
+        background-color: var(--primary-accent-color);
+        color: white;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        line-height: 28px;
+        display: inline-block;
+        font-weight: bold;
+    }
+    .other-month { color: #ced4da; background-color: #f8f9fa; }
+    .event-bar {
+        position: relative;
+        margin-top: 2px;
+        height: 24px;
+        line-height: 24px;
+        color: white;
+        border-radius: 4px;
+        padding: 0 5px;
+        font-size: 0.8em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+        text-align: left;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    .event-bar:hover { transform: scale(1.05); }
+    .nav-tabs { border-bottom-color: var(--border-color); }
+    .nav-tabs .nav-link { color: var(--text-muted-color); cursor: pointer; }
+    .nav-tabs .nav-link.active {
+        color: var(--text-color);
+        border-color: var(--border-color) var(--border-color) var(--main-bg-color);
+    }
+    .nav-pills .nav-link { color: var(--text-muted-color); cursor: pointer; }
+    .nav-pills .nav-link.active {
+        background-color: var(--primary-accent-color) !important;
+        color: white;
+    }
+    .color-btn.selected { border: 2px solid black; transform: scale(1.2); }
+    #countdownView {
+        display: none;
+        flex-grow: 1;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    .bottom-nav {
+        border-top: 1px solid var(--border-color);
+        padding-top: 0.5rem;
+        margin-top: auto;
+    }
+
+    @keyframes celebrate-glow {
+        0%   { box-shadow: 0 0 5px #ffc107, 0 0 10px #ffc107; }
+        50%  { box-shadow: 0 0 20px #ffc107, 0 0 30px #ffc107, 0 0 40px #ffc107; }
+        100% { box-shadow: 0 0 5px #ffc107, 0 0 10px #ffc107; }
+    }
+    .celebrate {
+        border-color: #ffc107 !important;
+        animation: celebrate-glow 1.5s ease-in-out infinite;
+    }
+
+    @media (max-width: 767px) {
+        .calendar-wrapper { padding: 5px; margin: 5px auto; }
+        .calendar th, .calendar td { height: 14vh; padding: 2px; font-size: 0.8em; }
+        .date-number { font-size: 0.8em; }
+        .today .date-number { width: 22px; height: 22px; line-height: 22px; }
+        .event-bar { height: 18px; line-height: 18px; font-size: 0.7em; padding: 0 3px; }
+        .h4 { font-size: 1.2rem; }
+        .btn-group .btn { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
+        .nav-tabs .nav-link { padding: 0.5rem 0.6rem; font-size: 0.9rem; }
+    }
+</style>
+</head>
+<body>
+<div class="container" id="loginContainer">
+    <div class="login-box text-center">
+        <h1 class="h3 mb-3">ログイン</h1>
+        <div class="form-floating mb-3">
+            <input type="text" id="loginUser" class="form-control" placeholder="ユーザー名" autocomplete="off">
+            <label for="loginUser">ユーザー名 </label>
+        </div>
+        <button id="loginBtn" class="w-100 btn btn-lg btn-primary">ログイン</button>
+        <p id="loginMsg" class="text-danger mt-2"></p>
+    </div>
+</div>
+
+<div class="container-fluid calendar-wrapper" id="calendarContainer" style="display:none;">
+    <div id="calendarHeader">
+        <div class="d-flex flex-wrap justify-content-between align-items-center pb-3 border-bottom mb-3">
+            <div class="d-flex align-items: center">
+                <h1 class="h3 mb-0 me-4">カレンダー</h1>
+                <div class="btn-group">
+                    <button id="prevBtn" class="btn btn-primary">‹</button>
+                    <button id="todayBtn" class="btn btn-outline-secondary">今日</button>
+                    <button id="nextBtn" class="btn btn-primary">›</button>
+                </div>
+                <h2 id="calendar-title" class="h4 mb-0 mx-4"></h2>
+            </div>
+            <ul class="nav nav-tabs" id="calendarTabs">
+                <li class="nav-item"><a class="nav-link active" data-calendar="my" href="#">拓己</a></li>
+                <li class="nav-item"><a class="nav-link" data-calendar="partner" href="#">心春</a></li>
+                <li class="nav-item"><a class="nav-link" data-calendar="shared" href="#">共有</a></li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="calendar-body">
+        <div id="calendarView">
+            <div id="calendar" class="calendar"></div>
+        </div>
+        <div id="countdownView">
+        </div>
+        <div id="usageView" style="display:none;">
+            <div class="container-md py-4">
+                <h2 class="text-center mb-4">使い方ガイド</h2>
+                <h3 class="h5 mt-4">1. ログイン</h3>
+                <p>「拓己」または「心春」のどちらかの名前でログインします。ここでログインした名前が、新しく予定を追加するときの「作成者」になります。</p>
+                <h3 class="h5 mt-4">2. カレンダー画面</h3>
+                <p>カレンダー画面では、予定の管理ができます。</p>
+                <ul>
+                    <li><strong>予定の追加</strong>: 予定を追加したい日付の空いている場所をクリックすると、入力画面が開きます。</li>
+                    <li><strong>予定の編集・削除</strong>: カレンダーに表示されている予定のバーをクリックすると、内容の編集や削除ができます。</li>
+                    <li><strong>非公開機能</strong>: 予定入力画面の下にある「非公開にする」にチェックを入れると、その予定は共有カレンダーに表示されなくなり、本人のカレンダーでのみ確認できます。</li>
+                    <li><strong>カレンダーの切り替え</strong>: 上部のタブで、各個人のカレンダーと、二人の公開予定がすべて表示される「共有」カレンダーを切り替えられます。</li>
+                </ul>
+                <h3 class="h5 mt-4">3. カウントダウン画面</h3>
+                <p>画面下部の「カウント」タブを選ぶと、記念日や誕生日までの日数をいつでも確認できます。</p>
+                <h3 class="h5 mt-4">4. 自動で表示される予定</h3>
+                <p>以下の予定は、毎年自動でカレンダーに表示されます。（編集・削除はできません）</p>
+                <ul>
+                    <li>日本の祝日</li>
+                    <li>拓己誕生日 (10月2日)</li>
+                    <li>心春誕生日 (5月19日)</li>
+                    <li>n年記念日 (7月11日)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <ul class="nav nav-pills justify-content-center pt-3 bottom-nav" id="viewSwitcher">
+        <li class="nav-item"><a class="nav-link active" data-view="calendar" href="#">カレンダー</a></li>
+        <li class="nav-item"><a class="nav-link" data-view="countdown" href="#">カウント</a></li>
+        <li class="nav-item"><a class="nav-link" data-view="usage" href="#">使い方</a></li>
+    </ul>
+</div>
+
+<div class="modal fade" id="eventModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">予定の編集</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="eventId">
+                <div class="mb-2"><label>タイトル</label><input type="text" id="eventTitle" class="form-control"></div>
+                <div class="mb-2 row">
+                    <div class="col"><label>開始日</label><input type="date" id="eventStartDate" class="form-control"></div>
+                    <div class="col"><label>時間</label><input type="time" id="eventStartTime" class="form-control"></div>
+                </div>
+                <div class="mb-2 row">
+                    <div class="col"><label>終了日</label><input type="date" id="eventEndDate" class="form-control"></div>
+                    <div class="col"><label>時間</label><input type="time" id="eventEndTime" class="form-control"></div>
+                </div>
+                <div class="mb-2"><label>色</label><div id="colorButtons" class="d-flex gap-2"></div></div>
+                <div class="mb-2"><label>メモ</label><textarea id="eventMemo" class="form-control"></textarea></div>
+                <div class="form-check form-switch mt-3">
+                    <input class="form-check-input" type="checkbox" role="switch" id="isPrivateSwitch">
+                    <label class="form-check-label" for="isPrivateSwitch">非公開にする（共有カレンダーに表示しない）</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="deleteEventBtn" class="btn btn-danger">削除</button>
+                <button type="button" id="saveEventBtn" class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="calendar.js"></script>
+</body>
+</html>
+
